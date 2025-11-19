@@ -20,14 +20,17 @@ export class UsersService {
   ) {}
 
   async getStats() {
-    const totalUsers = await this.playerRepository.count();
+    const totalUsers = await this.playerRepository.count({ where: { role: 'USER' } });
     const topReferrer = await this.playerRepository
       .createQueryBuilder('player')
+      .where("player.role = 'USER'")
       .orderBy('player.totalReferred', 'DESC')
       .limit(1)
       .getOne();
     const topMiner = await this.playerRepository
       .createQueryBuilder('player')
+      .select(['player.uuid', 'player.username', 'player.mineBalance'])
+      .where("player.role = 'USER'")
       .orderBy('player.mineBalance', 'DESC')
       .limit(1)
       .getOne();
@@ -49,18 +52,21 @@ export class UsersService {
     };
   }
 
-  async findAll(page: number = 1, limit: number = 10, search: string, status: string, volume: string) {
+  async findAll(page: number = 1, limit: number = 10, search: string, volume: string) {
     const queryBuilder = this.playerRepository.createQueryBuilder('player');
 
+    // Always filter for users with the 'USER' role
+    queryBuilder.where("player.role = 'USER'");
+
     if (search) {
-      queryBuilder.where('player.username ILIKE :search OR player.solanaAddress ILIKE :search', {
+      queryBuilder.andWhere('(player.username ILIKE :search OR player.solanaAddress ILIKE :search)', {
         search: `%${search}%`,
       });
     }
 
-    if (status && status.toLowerCase() !== 'all') {
-      queryBuilder.andWhere('player.role = :status', { status: status.toUpperCase() });
-    }
+    // The status filter is now redundant as we only show USERs.
+    // If you need to filter by other statuses for other roles, we can adjust this.
+
 
     if (volume) {
       const order = volume.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';

@@ -18,16 +18,14 @@ export class UsersController {
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page' })
   @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by username or wallet' })
-  @ApiQuery({ name: 'status', required: false, type: String, description: 'Filter by status (e.g., ACTIVE, BANNED)' })
   @ApiQuery({ name: 'volume', required: false, type: String, description: 'Sort by volume (ASC or DESC)' })
   findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query('search', new DefaultValuePipe('')) search: string,
-    @Query('status', new DefaultValuePipe('all')) status: string,
     @Query('volume', new DefaultValuePipe('DESC')) volume: string,
   ) {
-    return this.usersService.findAll(page, limit, search, status, volume);
+    return this.usersService.findAll(page, limit, search, volume);
   }
 
   @Get(':uuid')
