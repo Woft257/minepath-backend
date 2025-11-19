@@ -1,47 +1,52 @@
-# Minepath Backend API
+# Minepath Backend
 
-Backend API server for the Minepath Dashboard, built with **NestJS**, **TypeScript**, and **PostgreSQL**. This project is containerized with **Docker** for consistent and reliable deployment.
+This is the backend service for the Minepath application, built with NestJS, TypeORM, and PostgreSQL. It provides a robust API for managing users, KOLs, transactions, and provides dashboard functionalities for both Admins and KOLs.
 
 ## Features
 
-- **Modern Framework**: Built with NestJS, a progressive Node.js framework for building efficient and scalable server-side applications.
-- **Database Integration**: Uses TypeORM to connect to a PostgreSQL database.
-- **API Documentation**: Integrated Swagger UI for easy API exploration and testing.
-- **Containerized**: Fully configured to run in a Docker container, eliminating environment-specific issues.
-- **Clean Architecture**: Organized into modules for better maintainability (Admin, Users, KOLs, etc.).
-- **KOLs Management**: Comprehensive system for managing Key Opinion Leaders, including performance tracking, commission management, and referral analytics.
+- **Authentication & Authorization:** Secure JWT-based authentication with a detailed Role-Based Access Control (RBAC) system (`Admin`, `KOL`).
+- **Admin Dashboard:** A comprehensive set of APIs for administrators to manage users, KOLs, BD Team members, and view system-wide statistics.
+- **KOL Dashboard:** A dedicated dashboard for KOLs to track their referral performance, commission earnings, and user engagement.
+- **Database Integration:** Uses TypeORM for object-relational mapping with PostgreSQL.
+- **API Documentation:** Auto-generated and interactive API documentation via Swagger.
+- **Containerized:** Fully configured with Docker for consistent and reliable deployment.
 
 ---
 
-## 🚀 Getting Started (Deployment with Docker)
+## 🚀 Getting Started (Docker)
 
-This is the recommended and most reliable way to run the application.
+This is the recommended way to run the application.
 
 ### Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running on your machine.
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+- A running PostgreSQL database accessible from your machine.
 
-### Step 1: Create the Environment File
+### Step 1: Configure Environment
 
-Create a file named `.env` in the root of the project (`minepath-backend/.env`) and add your database connection details. This file is crucial for the application to connect to your existing database.
+Create a `.env` file in the project root by copying the example file:
+
+```bash
+cp .env.example .env
+```
+
+Open the `.env` file and fill in the required values:
 
 ```env
 # .env file
 
-# PostgreSQL Database Connection
-DB_HOST=your_database_host
-DB_PORT=your_database_port
-DB_USERNAME=your_database_username
-DB_PASSWORD=your_database_password
-DB_DATABASE=your_database_name
+# Database Configuration
+DB_HOST=your-database-host
+DB_PORT=5432
+DB_NAME=minepath
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
 
-# Application Port (Optional, defaults to 3000)
-PORT=3000
+# JWT Secret - IMPORTANT: Use a long, random, and secret string
+JWT_SECRET=your-super-secret-and-long-key
 ```
 
 ### Step 2: Build the Docker Image
-
-Open a terminal in the project's root directory (`e:\Code\Minepath\minepath-backend`) and run the following command. This will build the Docker image based on the `Dockerfile`.
 
 ```bash
 docker build -t minepath-backend .
@@ -49,56 +54,62 @@ docker build -t minepath-backend .
 
 ### Step 3: Run the Docker Container
 
-Once the image is built, run the application inside a container with this command. It will start the server and connect it to your database.
-
 ```bash
 docker run -p 3000:3000 -d --name minepath-api --env-file ./.env minepath-backend
 ```
 
-**Command Breakdown:**
-- `-p 3000:3000`: Maps port 3000 on your machine to port 3000 inside the container.
-- `-d`: Runs the container in detached mode (in the background).
-- `--name minepath-api`: Assigns a convenient name to the container.
-- `--env-file ./.env`: Passes your database credentials from the `.env` file into the container.
-- `minepath-backend`: The name of the image to run.
-
 ### Step 4: Access the Application
 
-Your backend server is now running!
-
-- **Swagger API Docs**: Open your browser and go to [**http://localhost:3000/api**](http://localhost:3000/api)
-- **Base URL**: The API is running at `http://localhost:3000`
+- **API Server**: `http://localhost:3000`
+- **Swagger Docs**: `http://localhost:3000/api`
 
 ---
 
-## API Documentation
+## API Documentation & Testing
 
-All available API endpoints are documented and testable via the Swagger UI.
+All API endpoints are documented via Swagger UI at **[http://localhost:3000/api](http://localhost:3000/api)**.
 
-**URL**: [**http://localhost:3000/api**](http://localhost:3000/api)
+### Using Authenticated Endpoints
 
-All dashboard-related APIs are grouped under the **"Admin Dashboard"** tag.
+1.  **Get Token:** Navigate to the `Authentication` section, use the `POST /auth/login` endpoint with valid credentials for an `Admin` or `KOL` user to get an `access_token`.
+2.  **Authorize:** Click the **Authorize** button at the top of the Swagger page.
+3.  **Set Token:** In the popup, enter `Bearer <your_access_token>` (e.g., `Bearer eyJhbGci...`) and click **Authorize**.
+4.  **Test:** You can now test all the protected endpoints.
+
+---
 
 ## Useful Docker Commands
 
-- **Check container logs:**
-  ```bash
-  docker logs minepath-api
-  ```
-- **Stop the container:**
-  ```bash
-  docker stop minepath-api
-  ```
-- **Remove the container:**
-  ```bash
-  docker rm minepath-api
-  ```
-- **Restart the container:**
-  ```bash
-  docker start minepath-api
-  ```
+- **Check logs:** `docker logs minepath-api`
+- **Follow logs live:** `docker logs -f minepath-api`
+- **Stop the container:** `docker stop minepath-api`
+- **Remove the container:** `docker rm minepath-api`
+- **Restart the container:** `docker start minepath-api`
 
-## License
+---
 
-MIT
+## Running Locally (for Development)
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v20 or later)
+- A running PostgreSQL database.
+
+### Installation
+
+1.  **Clone repository and install dependencies:**
+    ```bash
+    git clone <repository-url>
+    cd minepath-backend
+    npm install
+    ```
+2.  **Set up `.env` file** as described in the Docker setup.
+
+### Running in Dev Mode
+
+```bash
+npm run start:dev
+```
+
+This command starts the application with hot-reloading enabled.
 
