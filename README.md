@@ -1,158 +1,101 @@
 # Minepath Backend API
 
-Backend API server for Minepath Dashboard built with Node.js, Express, TypeScript, and PostgreSQL.
+Backend API server for the Minepath Dashboard, built with **NestJS**, **TypeScript**, and **PostgreSQL**. This project is containerized with **Docker** for consistent and reliable deployment.
 
 ## Features
 
-- ✅ RESTful API with TypeScript
-- ✅ PostgreSQL database integration
-- ✅ CORS enabled
-- ✅ Security headers with Helmet
-- ✅ Request logging with Morgan
-- ✅ Response compression
-- ✅ Health check endpoint
-- ✅ Comprehensive error handling
+- **Modern Framework**: Built with NestJS, a progressive Node.js framework for building efficient and scalable server-side applications.
+- **Database Integration**: Uses TypeORM to connect to a PostgreSQL database.
+- **API Documentation**: Integrated Swagger UI for easy API exploration and testing.
+- **Containerized**: Fully configured to run in a Docker container, eliminating environment-specific issues.
+- **Clean Architecture**: Organized into modules for better maintainability (Admin, Users, etc.).
 
-## Prerequisites
+---
 
-- Node.js 18+ 
-- PostgreSQL database
-- npm or yarn
+## 🚀 Getting Started (Deployment with Docker)
 
-## Installation
+This is the recommended and most reliable way to run the application.
 
-1. Clone the repository and navigate to the backend folder:
-```bash
-cd minepath-backend
-```
+### Prerequisites
 
-2. Install dependencies:
-```bash
-npm install
-```
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running on your machine.
 
-3. Create `.env` file from `.env.example`:
-```bash
-cp .env.example .env
-```
+### Step 1: Create the Environment File
 
-4. Update `.env` with your database credentials:
+Create a file named `.env` in the root of the project (`minepath-backend/.env`) and add your database connection details. This file is crucial for the application to connect to your existing database.
+
 ```env
+# .env file
+
+# PostgreSQL Database Connection
+DB_HOST=your_database_host
+DB_PORT=your_database_port
+DB_USERNAME=your_database_username
+DB_PASSWORD=your_database_password
+DB_DATABASE=your_database_name
+
+# Application Port (Optional, defaults to 3000)
 PORT=3000
-NODE_ENV=development
-
-DB_HOST=your-database-host
-DB_PORT=5432
-DB_NAME=minepath
-DB_USER=dbadmin
-DB_PASSWORD=your-password
-DB_SSL=true
-
-CORS_ORIGIN=http://localhost:8080
 ```
 
-## Running the Server
+### Step 2: Build the Docker Image
 
-### Development Mode
+Open a terminal in the project's root directory (`e:\Code\Minepath\minepath-backend`) and run the following command. This will build the Docker image based on the `Dockerfile`.
+
 ```bash
-npm run dev
+docker build -t minepath-backend .
 ```
 
-### Production Build
+### Step 3: Run the Docker Container
+
+Once the image is built, run the application inside a container with this command. It will start the server and connect it to your database.
+
 ```bash
-npm run build
-npm start
+docker run -p 3000:3000 -d --name minepath-api --env-file ./.env minepath-backend
 ```
 
-## API Endpoints
+**Command Breakdown:**
+- `-p 3000:3000`: Maps port 3000 on your machine to port 3000 inside the container.
+- `-d`: Runs the container in detached mode (in the background).
+- `--name minepath-api`: Assigns a convenient name to the container.
+- `--env-file ./.env`: Passes your database credentials from the `.env` file into the container.
+- `minepath-backend`: The name of the image to run.
 
-### Health Check
-- `GET /api/health` - Check database connection status
+### Step 4: Access the Application
 
-### Dashboard
-- `GET /api/stats/dashboard` - Get dashboard statistics
-- `GET /api/stats/dashboard/transactions` - Get recent transactions
-- `GET /api/stats/dashboard/transactions/range?startDate=&endDate=` - Get transactions by date range
-- `GET /api/stats/dashboard/user-growth?days=30` - Get user growth data
+Your backend server is now running!
 
-### KOLs
-- `GET /api/stats/kols` - Get all KOLs
-- `GET /api/stats/kols/overview` - Get KOL overview statistics
-- `GET /api/stats/kols/top?limit=10` - Get top KOLs
-- `GET /api/stats/kols/:uuid` - Get KOL by ID
-- `GET /api/stats/kols/:uuid/referrals` - Get KOL referrals
-- `GET /api/stats/kols/:uuid/earnings?startDate=&endDate=` - Get KOL earnings
+- **Swagger API Docs**: Open your browser and go to [**http://localhost:3000/api**](http://localhost:3000/api)
+- **Base URL**: The API is running at `http://localhost:3000`
 
-### BD Team
-- `GET /api/stats/bd-team` - Get all BD team members
-- `GET /api/stats/bd-team/:uuid` - Get BD member by ID
-- `GET /api/stats/bd-team/:uuid/kols` - Get managed KOLs
-- `GET /api/stats/bd-team/:uuid/performance?startDate=&endDate=` - Get BD performance
+---
 
-### Users
-- `GET /api/stats/users?limit=100&offset=0` - Get all users
-- `GET /api/stats/users/stats` - Get user statistics
-- `GET /api/stats/users/active?days=7` - Get active users
-- `GET /api/stats/users/search?q=username` - Search users
-- `GET /api/stats/users/:uuid` - Get user by ID
-- `GET /api/stats/users/:uuid/transactions?limit=50` - Get user transactions
-- `GET /api/stats/users/:uuid/referrals` - Get user referrals
+## API Documentation
 
-### Transactions
-- `GET /api/stats/transactions?limit=100&offset=0` - Get all transactions
-- `GET /api/stats/transactions/stats` - Get transaction statistics
-- `GET /api/stats/transactions/range?startDate=&endDate=` - Get transactions by date range
-- `GET /api/stats/transactions/claims?limit=20` - Get recent claims
-- `GET /api/stats/transactions/method/:method?limit=100` - Get transactions by method
-- `GET /api/stats/transactions/:id` - Get transaction by ID
+All available API endpoints are documented and testable via the Swagger UI.
 
-## Project Structure
+**URL**: [**http://localhost:3000/api**](http://localhost:3000/api)
 
-```
-minepath-backend/
-├── src/
-│   ├── config/
-│   │   └── database.ts          # Database configuration
-│   ├── controllers/             # Request handlers
-│   │   ├── dashboard.controller.ts
-│   │   ├── kol.controller.ts
-│   │   ├── bd-team.controller.ts
-│   │   ├── user.controller.ts
-│   │   └── transaction.controller.ts
-│   ├── services/                # Business logic
-│   │   ├── dashboard.service.ts
-│   │   ├── kol.service.ts
-│   │   ├── bd-team.service.ts
-│   │   ├── user.service.ts
-│   │   └── transaction.service.ts
-│   ├── routes/                  # API routes
-│   │   ├── dashboard.routes.ts
-│   │   ├── kol.routes.ts
-│   │   ├── bd-team.routes.ts
-│   │   ├── user.routes.ts
-│   │   ├── transaction.routes.ts
-│   │   ├── health.routes.ts
-│   │   └── index.ts
-│   ├── types/                   # TypeScript types
-│   │   └── index.ts
-│   └── index.ts                 # Application entry point
-├── .env.example                 # Environment variables template
-├── .gitignore
-├── package.json
-├── tsconfig.json
-└── README.md
-```
+All dashboard-related APIs are grouped under the **"Admin Dashboard"** tag.
 
-## Database Schema
+## Useful Docker Commands
 
-The backend connects to a PostgreSQL database with the following main tables:
-
-- `players` - User accounts with balances, roles, and referral data
-- `transaction_logs` - Transaction history
-- `ref_logs` - Referral tracking
-- `mine_to_earn` - Player upgrades
-
-See `DatabaseManager.java` in the main project for complete schema.
+- **Check container logs:**
+  ```bash
+  docker logs minepath-api
+  ```
+- **Stop the container:**
+  ```bash
+  docker stop minepath-api
+  ```
+- **Remove the container:**
+  ```bash
+  docker rm minepath-api
+  ```
+- **Restart the container:**
+  ```bash
+  docker start minepath-api
+  ```
 
 ## License
 
