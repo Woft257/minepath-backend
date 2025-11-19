@@ -1,45 +1,120 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Player } from '../../database/entities/player.entity';
+import { TransactionLog } from '../../database/entities/transaction-log.entity';
+import { RefLog } from '../../database/entities/ref-log.entity';
+import { MineToEarn } from '../../database/entities/mine-to-earn.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(Player)
     private readonly playerRepository: Repository<Player>,
+    @InjectRepository(TransactionLog)
+    private readonly transactionLogRepository: Repository<TransactionLog>,
+    @InjectRepository(RefLog)
+    private readonly refLogRepository: Repository<RefLog>,
+    @InjectRepository(MineToEarn)
+    private readonly mineToEarnRepository: Repository<MineToEarn>,
   ) {}
+
+  async getStats() {
+    const totalUsers = await this.playerRepository.count();
+    const topReferrer = await this.playerRepository
+      .createQueryBuilder('player')
+      .orderBy('player.totalReferred', 'DESC')
+      .limit(1)
+      .getOne();
+    const topMiner = await this.playerRepository
+      .createQueryBuilder('player')
+      .orderBy('player.mineBalance', 'DESC')
+      .limit(1)
+      .getOne();
+
+    return {
+      totalUsers,
+      topReferrer: topReferrer
+        ? {
+            username: topReferrer.username,
+            totalReferred: topReferrer.totalReferred,
+          }
+        : null,
+      topMiner: topMiner
+        ? {
+            username: topMiner.username,
+            mineBalance: topMiner.mineBalance,
+          }
+        : null,
+    };
+  }
 
   async findAll(page: number = 1, limit: number = 10, search: string, status: string, volume: string) {
     const queryBuilder = this.playerRepository.createQueryBuilder('player');
 
-    // Handle search by username or wallet address
     if (search) {
       queryBuilder.where('player.username ILIKE :search OR player.solanaAddress ILIKE :search', {
         search: `%${search}%`,
       });
     }
 
-    // Handle status filter (assuming 'ACTIVE' and 'BANNED' are roles or some status field)
-    // Note: The 'players' table has a 'role' column, but no 'status' column. We'll use 'role' for now.
     if (status && status.toLowerCase() !== 'all') {
-        // Example: if status is 'ACTIVE', we might look for roles like 'USER' or 'KOL'
-        // If status is 'BANNED', we might look for a specific 'BANNED' role.
-        // This logic needs to be clarified based on the actual data.
-        queryBuilder.andWhere('player.role = :status', { status: status.toUpperCase() });
+      queryBuilder.andWhere('player.role = :status', { status: status.toUpperCase() });
     }
 
-    // Handle sorting by volume (total_sol_share is a good candidate)
     if (volume) {
-        const order = volume.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-        queryBuilder.orderBy('player.totalSolShare', order);
+      const order = volume.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+      queryBuilder.orderBy('player.totalSolShare', order);
+    } else {
+      queryBuilder.orderBy('player.username', 'ASC');
     }
 
-    // Pagination
     const offset = (page - 1) * limit;
     queryBuilder.skip(offset).take(limit);
 
-    const [data, total] = await queryBuilder.getManyAndCount();
+    const [players, total] = await queryBuilder.getManyAndCount();
+
+    const data = await Promise.all(
+      players.map(async (player) => {
+        const totalClaims = await this.transactionLogRepository.count({
+          where: {
+            playerUuid: player.uuid,
+            transactionType: 'CLAIM',
+          },
+        });
+
+        const volumeResult = await this.transactionLogRepository
+          .createQueryBuilder('tx')
+          .select('SUM(tx.solAmount)', 'total')
+          .where('tx.playerUuid = :uuid', { uuid: player.uuid })
+          .andWhere('tx.solAmount IS NOT NULL')
+          .getRawOne();
+
+        const solVolume = volumeResult?.total ? parseFloat(volumeResult.total) : 0;
+
+        let referredByUsername = null;
+        if (player.referredBy) {
+          const referrer = await this.playerRepository.findOne({
+            where: { uuid: player.referredBy },
+            select: ['username'],
+          });
+          referredByUsername = referrer?.username || null;
+        }
+
+        return {
+          uuid: player.uuid,
+          username: player.username,
+          solanaAddress: player.solanaAddress,
+          mineBalance: player.mineBalance,
+          solBalance: player.solBalance,
+          totalClaims,
+          solVolume,
+          referredBy: referredByUsername,
+          role: player.role,
+          totalReferred: player.totalReferred,
+        };
+      }),
+    );
 
     return {
       data,
@@ -50,9 +125,112 @@ export class UsersService {
   }
 
   async findOne(uuid: string) {
-    // This needs to be expanded to fetch all details shown in the modal,
-    // including transaction history and referral tree, likely involving joins with other tables.
-    return this.playerRepository.findOne({ where: { uuid } });
+    const player = await this.playerRepository.findOne({ where: { uuid } });
+
+    if (!player) {
+      return null;
+    }
+
+    const totalClaims = await this.transactionLogRepository.count({
+      where: {
+        playerUuid: uuid,
+        transactionType: 'CLAIM',
+      },
+    });
+
+    let referredByUsername = null;
+    if (player.referredBy) {
+      const referrer = await this.playerRepository.findOne({
+        where: { uuid: player.referredBy },
+        select: ['username'],
+      });
+      referredByUsername = referrer?.username || null;
+    }
+
+    const volumeResult = await this.transactionLogRepository
+      .createQueryBuilder('tx')
+      .select('SUM(tx.solAmount)', 'total')
+      .where('tx.playerUuid = :uuid', { uuid })
+      .andWhere('tx.solAmount IS NOT NULL')
+      .getRawOne();
+
+    const solVolume = volumeResult?.total ? parseFloat(volumeResult.total) : 0;
+
+    const mineToEarn = await this.mineToEarnRepository.findOne({
+      where: { playerUuid: uuid },
+    });
+
+    const transactions = await this.transactionLogRepository.find({
+      where: { playerUuid: uuid },
+      order: { createdAt: 'DESC' },
+      take: 50,
+    });
+
+    const referralTree = await this.buildReferralTree(uuid);
+
+    return {
+      uuid: player.uuid,
+      username: player.username,
+      solanaAddress: player.solanaAddress,
+      mineBalance: player.mineBalance,
+      solBalance: player.solBalance,
+      role: player.role,
+      lastLogin: player.lastLogin,
+      totalClaims,
+      solVolume,
+      referredBy: referredByUsername,
+      upgradeStatus: mineToEarn
+        ? {
+            speedUpgrade: mineToEarn.upgradeSpeed,
+            inventoryUpgrade: mineToEarn.upgradeInventory,
+            passiveIncome: mineToEarn.upgradePassiveIncome,
+            resetCooldown: mineToEarn.upgradeResetCooldown,
+            miningArea: mineToEarn.upgradeMiningArea,
+          }
+        : null,
+      transactions: transactions.map((tx) => ({
+        id: tx.id,
+        date: tx.createdAt,
+        type: tx.transactionType,
+        method: tx.method,
+        amount: tx.amount,
+        solAmount: tx.solAmount,
+        status: tx.status,
+        transactionHash: tx.transactionHash,
+      })),
+      referralTree,
+    };
+  }
+
+  private async buildReferralTree(referrerUuid: string, maxDepth: number = 10) {
+    const tree = [];
+    let currentLevel = [referrerUuid];
+    let level = 1;
+
+    while (currentLevel.length > 0 && level <= maxDepth) {
+      const referrals = await this.playerRepository
+        .createQueryBuilder('player')
+        .where('player.referredBy IN (:...uuids)', { uuids: currentLevel })
+        .getMany();
+
+      if (referrals.length === 0) {
+        break;
+      }
+
+      const levelData = referrals.map((ref) => ({
+        uuid: ref.uuid,
+        username: ref.username,
+        wallet: ref.solanaAddress,
+        level: `F${level}`,
+        mineBalance: ref.mineBalance,
+        totalReferred: ref.totalReferred,
+      }));
+
+      tree.push(...levelData);
+      currentLevel = referrals.map((ref) => ref.uuid);
+      level++;
+    }
+
+    return tree;
   }
 }
-

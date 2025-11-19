@@ -7,6 +7,12 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get('stats')
+  @ApiOperation({ summary: 'Get statistics for the Users Board dashboard' })
+  getStats() {
+    return this.usersService.getStats();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get a paginated list of users for the User Board' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })

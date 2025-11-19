@@ -12,13 +12,18 @@ import { AdminModule } from './admin/admin.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get<string>('DB_USERNAME', 'user'),
-        password: configService.get<string>('DB_PASSWORD', 'password'),
-        database: configService.get<string>('DB_DATABASE', 'minepath'),
-        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-        synchronize: false, // Set to true for development to auto-create tables, but false is safer for production
+        host: configService.get<string>('DB_HOST'),
+        port: configService.get<number>('DB_PORT'),
+        // Accept both DB_USERNAME or DB_USER
+        username: configService.get<string>('DB_USERNAME') || configService.get<string>('DB_USER'),
+        password: configService.get<string>('DB_PASSWORD'),
+        // Accept both DB_DATABASE or DB_NAME
+        database: configService.get<string>('DB_DATABASE') || configService.get<string>('DB_NAME'),
+        entities: [__dirname + '/../**/*.entity.js'],
+        synchronize: false, // Do not auto-create tables
+        ssl: {
+          rejectUnauthorized: false, // Necessary for connecting to some cloud databases from local machine
+        },
       }),
       inject: [ConfigService],
     }),
