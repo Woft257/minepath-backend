@@ -1,0 +1,62 @@
+### KOLs Management API Tests
+### Base URL: http://localhost:3000
+
+### 1. Get KOL Statistics
+GET http://localhost:3000/admin/kols/stats
+Content-Type: application/json
+
+###
+
+### 2. Get All KOLs
+GET http://localhost:3000/admin/kols
+Content-Type: application/json
+
+###
+
+### 3. Get All KOLs with Search
+GET http://localhost:3000/admin/kols?search=Streamer
+Content-Type: application/json
+
+###
+
+### 4. Get BD Managers
+GET http://localhost:3000/admin/kols/bd-managers
+Content-Type: application/json
+
+###
+
+### 5. Add New KOL
+POST http://localhost:3000/admin/kols
+Content-Type: application/json
+
+{
+  "usernameOrRefCode": "StreamerX",
+  "managedByUuid": "bd-manager-uuid-here"
+}
+
+###
+
+### 6. Get KOL Details
+GET http://localhost:3000/admin/kols/kol-uuid-here
+Content-Type: application/json
+
+###
+
+### 7. Update KOL Configuration
+PUT http://localhost:3000/admin/kols/kol-uuid-here
+Content-Type: application/json
+
+{
+  "managedByUuid": "bd-manager-uuid-here",
+  "solCommissionRate": 12.0,
+  "mineCommissionRate": 3.0
+}
+
+###
+
+### 8. Remove KOL
+DELETE http://localhost:3000/admin/kols/kol-uuid-here
+Content-Type: application/json
+
+###
+

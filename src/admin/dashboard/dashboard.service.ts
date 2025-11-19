@@ -40,12 +40,19 @@ export class DashboardService {
     // 5. Total KOLs - Count of players where role starts with 'KOL'
     const totalKols = await this.playerRepository.count({ where: { role: Like('KOL%') } });
 
+    // 6. Total SOL Balance in Wallet
+    const { totalSolBalance } = await this.playerRepository
+      .createQueryBuilder('player')
+      .select('SUM(player.solBalance)', 'totalSolBalance')
+      .getRawOne();
+
     return {
       totalClaimFee: parseFloat(totalClaimFee) || 0,
       totalMineMinted: parseInt(totalMineMinted) || 0,
       totalClaims,
       activePlayers,
       totalKols,
+      totalSolBalance: parseFloat(totalSolBalance) || 0,
     };
   }
 

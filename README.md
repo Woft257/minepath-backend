@@ -8,7 +8,8 @@ Backend API server for the Minepath Dashboard, built with **NestJS**, **TypeScri
 - **Database Integration**: Uses TypeORM to connect to a PostgreSQL database.
 - **API Documentation**: Integrated Swagger UI for easy API exploration and testing.
 - **Containerized**: Fully configured to run in a Docker container, eliminating environment-specific issues.
-- **Clean Architecture**: Organized into modules for better maintainability (Admin, Users, etc.).
+- **Clean Architecture**: Organized into modules for better maintainability (Admin, Users, KOLs, etc.).
+- **KOLs Management**: Comprehensive system for managing Key Opinion Leaders, including performance tracking, commission management, and referral analytics.
 
 ---
 
