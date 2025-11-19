@@ -3,10 +3,14 @@ import { PaginationDto } from './dto/pagination.dto';
 import { KolDashboardService } from './kol-dashboard.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../auth/role.enum';
+import { RolesGuard } from '../auth/roles.guard';
 
 @ApiTags('KOL Dashboard')
 @ApiBearerAuth()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.KOL)
 @Controller('kol-dashboard')
 export class KolDashboardController {
   constructor(private readonly kolDashboardService: KolDashboardService) {}

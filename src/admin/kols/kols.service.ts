@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, IsNull, Not, Brackets } from 'typeorm';
-import { Player } from '../database/entities/player.entity';
-import { CommissionLog } from '../database/entities/commission-log.entity';
-import { TransactionLog } from '../database/entities/transaction-log.entity';
+import { Player } from '../../database/entities/player.entity';
+// import { CommissionLog } from '../../database/entities/commission-log.entity';
+import { TransactionLog } from '../../database/entities/transaction-log.entity';
 import { AddKolDto } from './dto/add-kol.dto';
 import { UpdateKolDto } from './dto/update-kol.dto';
 
@@ -12,8 +12,8 @@ export class KolsService {
   constructor(
     @InjectRepository(Player)
     private playerRepository: Repository<Player>,
-    @InjectRepository(CommissionLog)
-    private commissionLogRepository: Repository<CommissionLog>,
+    // @InjectRepository(CommissionLog)
+    // private commissionLogRepository: Repository<CommissionLog>,
     @InjectRepository(TransactionLog)
     private transactionLogRepository: Repository<TransactionLog>,
   ) {}
@@ -192,11 +192,12 @@ export class KolsService {
 
     const unpaidCommission = totalVolume * kol.solFeeShare;
 
-    const commissionHistory = await this.commissionLogRepository.find({
-      where: { kolUuid: uuid },
-      order: { createdAt: 'DESC' },
-      take: 50,
-    });
+    // const commissionHistory = await this.commissionLogRepository.find({
+    //   where: { kolUuid: uuid },
+    //   order: { createdAt: 'DESC' },
+    //   take: 50,
+    // });
+    const commissionHistory = []; // Temporarily disabled
 
     const referralGrowth = await this.getReferralGrowthData(uuid);
 
@@ -223,13 +224,7 @@ export class KolsService {
         wallet: user.wallet,
         totalSpent: parseFloat(user.totalSpent || 0),
       })),
-      commissionHistory: commissionHistory.map((log) => ({
-        date: log.createdAt,
-        solAmount: parseFloat(log.solAmount.toString()),
-        mineAmount: log.mineAmount,
-        status: log.status,
-        txnHash: log.transactionHash,
-      })),
+      commissionHistory: commissionHistory, // Temporarily disabled
     };
   }
 

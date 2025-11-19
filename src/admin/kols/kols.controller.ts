@@ -1,10 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { KolsService } from './kols.service';
 import { AddKolDto } from './dto/add-kol.dto';
 import { UpdateKolDto } from './dto/update-kol.dto';
+import { AuthGuard } from '../../auth/auth.guard';
+import { Roles } from '../../auth/roles.decorator';
+import { Role } from '../../auth/role.enum';
+import { RolesGuard } from '../../auth/roles.guard';
 
 @ApiTags('KOLs Management')
+@ApiBearerAuth()
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.Admin)
 @Controller('admin/kols')
 export class KolsController {
   constructor(private readonly kolsService: KolsService) {}

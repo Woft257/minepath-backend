@@ -3,6 +3,7 @@ import { UsersModule } from './users/users.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { BdTeamModule } from './bd-team/bd-team.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { KolsModule } from './kols/kols.module';
 
 
 @Module({
@@ -10,8 +11,8 @@ import { TransactionsModule } from './transactions/transactions.module';
     UsersModule,
     DashboardModule,
     BdTeamModule,
+    KolsModule,
     TransactionsModule,
-    // We will add other modules like KolsModule, TransactionsModule here later
   ],
 })
 export class AdminModule {}

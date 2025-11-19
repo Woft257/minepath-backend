@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AdminModule } from './admin/admin.module';
-import { KolsModule } from './kols/kols.module';
+
 import { KolDashboardModule } from './kol-dashboard/kol-dashboard.module';
 import { AuthModule } from './auth/auth.module';
 
@@ -31,7 +31,7 @@ import { AuthModule } from './auth/auth.module';
       inject: [ConfigService],
     }),
     AdminModule,
-    KolsModule,
+
     KolDashboardModule,
     AuthModule,
   ],

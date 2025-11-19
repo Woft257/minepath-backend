@@ -1,8 +1,15 @@
-import { Controller, Get, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import { Controller, Get, Query, ParseIntPipe, DefaultValuePipe, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '../../auth/auth.guard';
+import { Roles } from '../../auth/roles.decorator';
+import { Role } from '../../auth/role.enum';
+import { RolesGuard } from '../../auth/roles.guard';
 
 @ApiTags('Admin Dashboard')
+@ApiBearerAuth()
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.Admin)
 @Controller('admin/dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}

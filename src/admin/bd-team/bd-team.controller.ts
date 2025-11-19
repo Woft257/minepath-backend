@@ -1,9 +1,16 @@
-import { Controller, Get, Post, Delete, Body, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { BdTeamService } from './bd-team.service';
 import { AddBdMemberDto } from './dto/add-bd-member.dto';
-import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '../../auth/auth.guard';
+import { Roles } from '../../auth/roles.decorator';
+import { Role } from '../../auth/role.enum';
+import { RolesGuard } from '../../auth/roles.guard';
 
 @ApiTags('Admin - BD Team')
+@ApiBearerAuth()
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.Admin)
 @Controller('admin/bd-team')
 export class BdTeamController {
   constructor(private readonly bdTeamService: BdTeamService) {}

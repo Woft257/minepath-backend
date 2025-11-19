@@ -1,8 +1,15 @@
-import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '../../auth/auth.guard';
+import { Roles } from '../../auth/roles.decorator';
+import { Role } from '../../auth/role.enum';
+import { RolesGuard } from '../../auth/roles.guard';
 
 @ApiTags('Admin Dashboard') // Group all APIs under this tag
+@ApiBearerAuth()
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.Admin)
 @Controller('admin/users') // Prefix all routes in this controller with 'admin/users'
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
