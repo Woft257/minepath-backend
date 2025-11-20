@@ -21,9 +21,11 @@ export class BdTeamService {
 
     const bdData = await Promise.all(
       bds.map(async (bd) => {
-        const kols = await this.playerRepository.find({
-          where: { managedBy: { uuid: bd.uuid } },
-        });
+        // Query KOLs managed by this BD using the foreign key column
+        const kols = await this.playerRepository
+          .createQueryBuilder('player')
+          .where('player.managed_by_uuid = :bdUuid', { bdUuid: bd.uuid })
+          .getMany();
 
         const kolsManaged = kols.length;
         let totalVolumeGenerated = 0;
@@ -32,9 +34,9 @@ export class BdTeamService {
           const kolUuids = kols.map((kol) => kol.uuid);
           const result = await this.transactionLogRepository
             .createQueryBuilder('log')
-            .select('SUM(log.amount)', 'total')
+            .select('SUM(log.sol_amount)', 'total')
             .where('log.player_uuid IN (:...kolUuids)', { kolUuids })
-            .andWhere("log.type = 'SOL_REVENUE'")
+            .andWhere("log.method = 'MINING'")
             .getRawOne();
           totalVolumeGenerated = result && result.total ? parseFloat(result.total) : 0;
         }
