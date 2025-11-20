@@ -110,30 +110,23 @@ export class KolDashboardService {
     const { page = 1, limit = 10 } = paginationDto;
     const offset = (page - 1) * limit;
 
-    // Subquery to calculate total SOL spent for each player from transactions
-    const totalSpentSubQuery = this.transactionLogRepository
-      .createQueryBuilder('tx')
-      .select('tx.playerUuid', 'playerUuid')
-      .addSelect('SUM(tx.solAmount)', 'totalSolSpent')
-      .where("tx.transactionType = 'DEPOSIT'") // Assuming 'DEPOSIT' means spending SOL
-      .groupBy('tx.playerUuid');
-
-    // Main query to get the referred players and their stats
+    // Get referred players with their transaction stats
     const query = this.refLogRepository
       .createQueryBuilder('refLog')
-      .select([
-        'player.solanaAddress as "playerWallet"',
-        'refLog.createdAt as "joinedDate"',
-        'COALESCE(spent.totalSolSpent, 0)::float as "totalSolSpent"',
-      ])
+      .select('player.uuid', 'uuid')
+      .addSelect('player.solanaAddress', 'playerWallet')
+      .addSelect('MIN(refLog.createdAt)', 'joinedDate')
+      .addSelect('COALESCE(SUM(tx.solAmount), 0)::float', 'total_sol_spent')
       .innerJoin(Player, 'player', 'player.uuid = refLog.referredUuid')
       .leftJoin(
-        `(${totalSpentSubQuery.getQuery()})`,
-        'spent',
-        'spent.playerUuid = refLog.referredUuid',
+        TransactionLog,
+        'tx',
+        'tx.playerUuid = player.uuid AND tx.method = :method',
+        { method: 'MINING' }
       )
       .where('refLog.referrerUuid = :playerUuid', { playerUuid })
-      .orderBy('"totalSolSpent"', 'DESC')
+      .groupBy('player.uuid, player.solanaAddress')
+      .orderBy('total_sol_spent', 'DESC')
       .offset(offset)
       .limit(limit);
 
