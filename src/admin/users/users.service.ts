@@ -85,7 +85,7 @@ export class UsersService {
         const totalClaims = await this.transactionLogRepository.count({
           where: {
             playerUuid: player.uuid,
-            transactionType: 'MINING',
+            method: 'MINING',
           },
         });
 
@@ -140,7 +140,7 @@ export class UsersService {
     const totalClaims = await this.transactionLogRepository.count({
       where: {
         playerUuid: uuid,
-        transactionType: 'MINING',
+        method: 'MINING',
       },
     });
 
