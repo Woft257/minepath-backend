@@ -72,11 +72,26 @@ export class DashboardService {
   }
 
   async getRecentTransactions(limit: number = 5) {
-    return this.transactionLogRepository.find({
-      order: { createdAt: 'DESC' },
-      take: limit,
-      select: ['playerUuid', 'method', 'solAmount', 'status', 'createdAt'], // Select specific columns for privacy and performance
-    });
+    const transactions = await this.transactionLogRepository
+      .createQueryBuilder('log')
+      .leftJoin(Player, 'player', 'player.uuid = log.playerUuid')
+      .select([
+        'log.id as id',
+        'log.playerUuid as "playerUuid"',
+        'player.solanaAddress as "walletAddress"',
+        'log.method as method',
+        'log.transactionType as "transactionType"',
+        'log.amount as amount',
+        'log.solAmount as "solAmount"',
+        'log.transactionHash as "txnHash"',
+        'log.status as status',
+        'log.createdAt as "createdAt"',
+      ])
+      .orderBy('log.createdAt', 'DESC')
+      .limit(limit)
+      .getRawMany();
+
+    return transactions;
   }
 }
 
