@@ -27,22 +27,16 @@ export class KolDashboardService {
       throw new Error('Player not found');
     }
 
-    const f1MineEarnedResult = await this.commissionLogRepository
-      .createQueryBuilder('log')
-      .select('SUM(log.amount)', 'total')
-      .where('log.playerUuid = :playerUuid', { playerUuid })
-      .andWhere("log.currency = 'MINE'")
-      .getRawOne();
+    // Commission logs table doesn't exist yet, use player fields instead
+    const f1MineEarned = 0; // TODO: Will be calculated from commission_logs when table is created
 
-    const f1MineEarned = parseFloat(f1MineEarnedResult.total) || 0;
-
-    const readyToWithdrawSol = player.totalSolShare - player.totalPayout;
+    const readyToWithdrawSol = (player.totalSolShare || 0) - (player.totalPayout || 0);
 
     return {
       yourReferralCode: player.refCode,
-      totalReferrals: player.allReferred,
-      f1Referrals: player.totalReferred,
-      f1SolEarned: player.totalSolShare,
+      totalReferrals: player.allReferred || 0,
+      f1Referrals: player.totalReferred || 0,
+      f1SolEarned: player.totalSolShare || 0,
       f1MineEarned: f1MineEarned,
       readyToWithdraw: {
         sol: readyToWithdrawSol,
@@ -64,7 +58,7 @@ export class KolDashboardService {
       .createQueryBuilder('refLog')
       .select("DATE(refLog.createdAt) as date")
       .addSelect("COUNT(refLog.id)", "count")
-      .where('refLog.referredBy = :playerUuid', { playerUuid })
+      .where('refLog.referrerUuid = :playerUuid', { playerUuid })
       .andWhere('refLog.createdAt >= :sevenDaysAgo', { sevenDaysAgo })
       .groupBy('DATE(refLog.createdAt)')
       .getRawMany();
@@ -75,29 +69,25 @@ export class KolDashboardService {
       dailyCounts.set(dateString, parseInt(r.count, 10));
     });
 
-    const totalReferralsToday = player.allReferred;
-    let cumulativeReferrals = totalReferralsToday - (dailyCounts.get(new Date().toISOString().split('T')[0]) || 0);
-
+    // Build cumulative data from oldest to newest (7 days ago -> today)
     const growthData = [];
-    for (let i = 0; i < 7; i++) {
+    let cumulativeReferrals = 0;
+
+    for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateString = d.toISOString().split('T')[0];
 
-      if (i > 0) {
-        const previousDate = new Date();
-        previousDate.setDate(previousDate.getDate() - (i - 1));
-        const previousDateString = previousDate.toISOString().split('T')[0];
-        cumulativeReferrals -= (dailyCounts.get(previousDateString) || 0);
-      }
+      // Add daily count to cumulative total
+      cumulativeReferrals += (dailyCounts.get(dateString) || 0);
 
       growthData.push({
         date: dateString,
-        totalReferrals: cumulativeReferrals + (dailyCounts.get(dateString) || 0),
+        totalReferrals: cumulativeReferrals,
       });
     }
 
-    return growthData.reverse();
+    return growthData;
   }
 
   async getCommissionBreakdown(playerUuid: string) {
@@ -106,15 +96,9 @@ export class KolDashboardService {
       throw new Error('Player not found');
     }
 
-    const f1MineEarnedResult = await this.commissionLogRepository
-      .createQueryBuilder('log')
-      .select('SUM(log.amount)', 'total')
-      .where('log.playerUuid = :playerUuid', { playerUuid })
-      .andWhere("log.currency = 'MINE'")
-      .getRawOne();
-
-    const f1MineEarned = parseFloat(f1MineEarnedResult.total) || 0;
-    const f1SolEarned = player.totalSolShare;
+    // Commission logs table doesn't exist yet, use player fields instead
+    const f1MineEarned = 0; // TODO: Will be calculated from commission_logs when table is created
+    const f1SolEarned = player.totalSolShare || 0;
 
     return {
       mineEarned: f1MineEarned,

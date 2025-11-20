@@ -21,9 +21,11 @@ export class BdTeamService {
 
     const bdData = await Promise.all(
       bds.map(async (bd) => {
-        const kols = await this.playerRepository.find({
-          where: { managedBy: { uuid: bd.uuid } },
-        });
+        // Query KOLs managed by this BD using the foreign key column
+        const kols = await this.playerRepository
+          .createQueryBuilder('player')
+          .where('player.managed_by_uuid = :bdUuid', { bdUuid: bd.uuid })
+          .getMany();
 
         const kolsManaged = kols.length;
         let totalVolumeGenerated = 0;
@@ -32,9 +34,9 @@ export class BdTeamService {
           const kolUuids = kols.map((kol) => kol.uuid);
           const result = await this.transactionLogRepository
             .createQueryBuilder('log')
-            .select('SUM(log.amount)', 'total')
+            .select('SUM(log.sol_amount)', 'total')
             .where('log.player_uuid IN (:...kolUuids)', { kolUuids })
-            .andWhere("log.type = 'SOL_REVENUE'")
+            .andWhere("log.method = 'MINING'")
             .getRawOne();
           totalVolumeGenerated = result && result.total ? parseFloat(result.total) : 0;
         }
@@ -81,6 +83,74 @@ export class BdTeamService {
 
     await this.playerRepository.save(user);
     return { message: 'BD member added successfully', bd: user };
+  }
+
+  async getBdDetail(uuid: string) {
+    const bd = await this.playerRepository.findOne({
+      where: { uuid, role: 'BD' },
+    });
+
+    if (!bd) {
+      throw new NotFoundException('BD member not found');
+    }
+
+    // Get KOLs managed by this BD
+    const kols = await this.playerRepository
+      .createQueryBuilder('player')
+      .where('player.managed_by_uuid = :bdUuid', { bdUuid: bd.uuid })
+      .getMany();
+
+    const kolsManaged = kols.length;
+    let totalVolumeGenerated = 0;
+
+    if (kols.length > 0) {
+      const kolUuids = kols.map((kol) => kol.uuid);
+      const result = await this.transactionLogRepository
+        .createQueryBuilder('log')
+        .select('SUM(log.sol_amount)', 'total')
+        .where('log.player_uuid IN (:...kolUuids)', { kolUuids })
+        .andWhere("log.method = 'MINING'")
+        .getRawOne();
+      totalVolumeGenerated = result && result.total ? parseFloat(result.total) : 0;
+    }
+
+    return {
+      bd: {
+        uuid: bd.uuid,
+        username: bd.username,
+        wallet: bd.solanaAddress,
+        refCode: bd.refCode,
+        commissionRate: bd.commissionRate,
+        solFeeShare: bd.solFeeShare,
+      },
+      performance: {
+        kolsManaged,
+        totalVolumeGenerated,
+      },
+      kols: kols.map((kol) => ({
+        uuid: kol.uuid,
+        username: kol.username,
+        refCode: kol.refCode,
+        totalReferrals: kol.allReferred,
+      })),
+    };
+  }
+
+  async updateBdMember(uuid: string, updateDto: { commissionRate?: number; solFeeShare?: number }) {
+    const bd = await this.playerRepository.findOneBy({ uuid, role: 'BD' });
+    if (!bd) {
+      throw new NotFoundException('BD member not found');
+    }
+
+    if (updateDto.commissionRate !== undefined) {
+      bd.commissionRate = updateDto.commissionRate;
+    }
+    if (updateDto.solFeeShare !== undefined) {
+      bd.solFeeShare = updateDto.solFeeShare;
+    }
+
+    await this.playerRepository.save(bd);
+    return { message: 'BD member updated successfully', bd };
   }
 
   async removeBdMember(uuid: string) {
