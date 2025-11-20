@@ -208,35 +208,18 @@ export class UsersService {
     };
   }
 
-  private async buildReferralTree(referrerUuid: string, maxDepth: number = 10) {
-    const tree = [];
-    let currentLevel = [referrerUuid];
-    let level = 1;
+  private async buildReferralTree(referrerUuid: string) {
+    const referrals = await this.playerRepository.find({
+      where: { referredBy: referrerUuid },
+    });
 
-    while (currentLevel.length > 0 && level <= maxDepth) {
-      const referrals = await this.playerRepository
-        .createQueryBuilder('player')
-        .where('player.referredBy IN (:...uuids)', { uuids: currentLevel })
-        .getMany();
-
-      if (referrals.length === 0) {
-        break;
-      }
-
-      const levelData = referrals.map((ref) => ({
-        uuid: ref.uuid,
-        username: ref.username,
-        wallet: ref.solanaAddress,
-        level: `F${level}`,
-        mineBalance: ref.mineBalance,
-        totalReferred: ref.totalReferred,
-      }));
-
-      tree.push(...levelData);
-      currentLevel = referrals.map((ref) => ref.uuid);
-      level++;
-    }
-
-    return tree;
+    return referrals.map((ref) => ({
+      uuid: ref.uuid,
+      username: ref.username,
+      wallet: ref.solanaAddress,
+      level: 'F1',
+      mineBalance: ref.mineBalance,
+      totalReferred: ref.totalReferred,
+    }));
   }
 }
