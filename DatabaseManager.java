@@ -119,6 +119,20 @@ public class DatabaseManager {
                 "FOREIGN KEY (source_player_uuid) REFERENCES players(uuid) ON DELETE SET NULL" + // Set null if source player is deleted
                 ");";
 
+        // Create commission_logs table - Lưu lịch sử payout SOL cho KOL (sử dụng ngoài plugin)
+        String createCommissionLogsTable = "CREATE TABLE IF NOT EXISTS commission_logs (" +
+                "id SERIAL PRIMARY KEY," +
+                "kol_uuid VARCHAR(36)," +
+                "amount NUMERIC(38, 18) NOT NULL," +
+                "asset VARCHAR(16) NOT NULL DEFAULT 'SOL'," +
+                "method VARCHAR(50)," +
+                "tx_hash VARCHAR(255)," +
+                "paid_by VARCHAR(36)," +
+                "note TEXT," +
+                "status VARCHAR(20) NOT NULL DEFAULT 'SUCCESS'," +
+                "created_at TIMESTAMPTZ NOT NULL DEFAULT (now() at time zone 'utc')" +
+                ");";
+
         // Create mine_to_earn table for player upgrades
         String createMineToEarnTable = "CREATE TABLE IF NOT EXISTS mine_to_earn (" +
                 "player_uuid VARCHAR(36) PRIMARY KEY," +
@@ -168,6 +182,7 @@ public class DatabaseManager {
             statement.execute(createMineToEarnTable);
             statement.execute(createRefLogsTable);
             statement.execute(createTransactionLogsTable);
+            statement.execute(createCommissionLogsTable);
 
             // Create indexes
             statement.execute(createRefLogsIndexReferrer);
@@ -177,6 +192,10 @@ public class DatabaseManager {
             statement.execute(createTransactionLogsIndexMethod);
             statement.execute(createTransactionLogsIndexCreatedAt);
             statement.execute(createTransactionLogsIndexSourcePlayer);
+            // Indexes for commission_logs
+            statement.execute("CREATE INDEX IF NOT EXISTS idx_commission_logs_kol ON commission_logs(kol_uuid);");
+            statement.execute("CREATE INDEX IF NOT EXISTS idx_commission_logs_created_at ON commission_logs(created_at);");
+            statement.execute("CREATE INDEX IF NOT EXISTS idx_commission_logs_status ON commission_logs(status);");
 
             plugin.getLogger().info("Database schema is up to date.");
         } catch (SQLException e) {

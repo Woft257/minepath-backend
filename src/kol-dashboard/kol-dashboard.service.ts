@@ -152,4 +152,38 @@ export class KolDashboardService {
       totalPages: Math.ceil(totalCount / limit),
     };
   }
+
+  async getCommissionHistory(playerUuid: string, paginationDto: PaginationDto) {
+    const { page = 1, limit = 10 } = paginationDto;
+    const offset = (page - 1) * limit;
+
+    // Get commission logs for the KOL
+    const [commissionLogs, totalCount] = await this.commissionLogRepository.findAndCount({
+      where: { kolUuid: playerUuid },
+      order: { createdAt: 'DESC' },
+      skip: offset,
+      take: limit,
+    });
+
+    // Transform to DTO
+    const data = commissionLogs.map(log => ({
+      id: log.id,
+      amount: log.amount.toString(), // Preserve precision
+      asset: log.asset,
+      method: log.method,
+      txHash: log.txHash,
+      paidBy: log.paidBy,
+      note: log.note,
+      status: log.status,
+      createdAt: log.createdAt,
+    }));
+
+    return {
+      data,
+      total: totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+    };
+  }
 }

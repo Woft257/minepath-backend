@@ -39,5 +39,11 @@ export class KolDashboardController {
     const playerUuid = req.user.sub;
     return this.kolDashboardService.getTopReferrals(playerUuid, paginationDto);
   }
+
+  @Get('commission-history')
+  async getCommissionHistory(@Request() req, @Query() paginationDto: PaginationDto) {
+    const playerUuid = req.user.sub;
+    return this.kolDashboardService.getCommissionHistory(playerUuid, paginationDto);
+  }
 }
 

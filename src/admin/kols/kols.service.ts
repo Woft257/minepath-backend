@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, IsNull, Not, Brackets } from 'typeorm';
 import { Player } from '../../database/entities/player.entity';
-// import { CommissionLog } from '../../database/entities/commission-log.entity';
+import { CommissionLog } from '../../database/entities/commission-log.entity';
 import { TransactionLog } from '../../database/entities/transaction-log.entity';
 import { RefLog } from '../../database/entities/ref-log.entity';
 import { AddKolDto } from './dto/add-kol.dto';
@@ -13,8 +13,8 @@ export class KolsService {
   constructor(
     @InjectRepository(Player)
     private playerRepository: Repository<Player>,
-    // @InjectRepository(CommissionLog)
-    // private commissionLogRepository: Repository<CommissionLog>,
+    @InjectRepository(CommissionLog)
+    private commissionLogRepository: Repository<CommissionLog>,
     @InjectRepository(TransactionLog)
     private transactionLogRepository: Repository<TransactionLog>,
     @InjectRepository(RefLog)
@@ -195,12 +195,11 @@ export class KolsService {
 
     const unpaidCommission = totalVolume * kol.solFeeShare;
 
-    // const commissionHistory = await this.commissionLogRepository.find({
-    //   where: { kolUuid: uuid },
-    //   order: { createdAt: 'DESC' },
-    //   take: 50,
-    // });
-    const commissionHistory = []; // Temporarily disabled
+    const commissionHistory = await this.commissionLogRepository.find({
+      where: { kolUuid: uuid },
+      order: { createdAt: 'DESC' },
+      take: 50,
+    });
 
     const referralGrowth = await this.getReferralGrowthData(uuid);
 

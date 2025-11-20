@@ -6,24 +6,33 @@ export class CommissionLog {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'kol_uuid', type: 'varchar', length: 36 })
+  @Column({ name: 'kol_uuid', type: 'varchar', length: 36, nullable: true })
   kolUuid: string;
 
   @ManyToOne(() => Player)
-  @JoinColumn({ name: 'kol_uuid' })
+  @JoinColumn({ name: 'kol_uuid', referencedColumnName: 'uuid' })
   kol: Player;
 
-  @Column({ name: 'sol_amount', type: 'decimal', precision: 20, scale: 9 })
-  solAmount: number;
+  @Column({ type: 'decimal', precision: 38, scale: 18 })
+  amount: number;
 
-  @Column({ name: 'mine_amount', type: 'bigint' })
-  mineAmount: number;
+  @Column({ type: 'varchar', length: 16, default: 'SOL' })
+  asset: string;
 
-  @Column({ type: 'varchar', length: 20, default: 'PAID' })
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  method: string;
+
+  @Column({ name: 'tx_hash', type: 'varchar', length: 255, nullable: true })
+  txHash: string;
+
+  @Column({ name: 'paid_by', type: 'varchar', length: 36, nullable: true })
+  paidBy: string;
+
+  @Column({ type: 'text', nullable: true })
+  note: string;
+
+  @Column({ type: 'varchar', length: 20, default: 'SUCCESS' })
   status: string;
-
-  @Column({ name: 'transaction_hash', type: 'varchar', length: 255, nullable: true })
-  transactionHash: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
