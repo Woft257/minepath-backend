@@ -4,6 +4,7 @@ import { Repository, Like, IsNull, Not, Brackets } from 'typeorm';
 import { Player } from '../../database/entities/player.entity';
 // import { CommissionLog } from '../../database/entities/commission-log.entity';
 import { TransactionLog } from '../../database/entities/transaction-log.entity';
+import { RefLog } from '../../database/entities/ref-log.entity';
 import { AddKolDto } from './dto/add-kol.dto';
 import { UpdateKolDto } from './dto/update-kol.dto';
 
@@ -16,6 +17,8 @@ export class KolsService {
     // private commissionLogRepository: Repository<CommissionLog>,
     @InjectRepository(TransactionLog)
     private transactionLogRepository: Repository<TransactionLog>,
+    @InjectRepository(RefLog)
+    private refLogRepository: Repository<RefLog>,
   ) {}
 
   private getRecursiveReferralsQuery(kolUuid: string) {
@@ -229,24 +232,44 @@ export class KolsService {
   }
 
   private async getReferralGrowthData(kolUuid: string) {
-    const referralsQuery = this.getRecursiveReferralsQuery(kolUuid);
-    const referredUuidsResult = await this.playerRepository.query(referralsQuery);
-    if (referredUuidsResult.length === 0) return [];
-    const referredUuids = referredUuidsResult.map((r: { uuid: string }) => r.uuid);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    const referrals = await this.playerRepository
-      .createQueryBuilder('player')
-      .select("DATE_TRUNC('month', player.last_login)", 'month')
-      .addSelect('COUNT(*)', 'count')
-      .where('player.uuid IN (:...referredUuids)', { referredUuids })
-      .groupBy('month')
-      .orderBy('month', 'ASC')
+    const dailyReferrals = await this.refLogRepository
+      .createQueryBuilder('refLog')
+      .select("DATE(refLog.createdAt) as date")
+      .addSelect("COUNT(refLog.id)", "count")
+      .where('refLog.referrerUuid = :kolUuid', { kolUuid })
+      .andWhere('refLog.createdAt >= :sevenDaysAgo', { sevenDaysAgo })
+      .groupBy('DATE(refLog.createdAt)')
       .getRawMany();
 
-    return referrals.map((r) => ({
-      month: r.month,
-      count: parseInt(r.count),
-    }));
+    const dailyCounts = new Map<string, number>();
+    dailyReferrals.forEach(r => {
+      const dateString = new Date(r.date).toISOString().split('T')[0];
+      dailyCounts.set(dateString, parseInt(r.count, 10));
+    });
+
+    // Build cumulative data from oldest to newest (7 days ago -> today)
+    const growthData = [];
+    let cumulativeReferrals = 0;
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateString = d.toISOString().split('T')[0];
+
+      // Add daily count to cumulative total
+      cumulativeReferrals += (dailyCounts.get(dateString) || 0);
+
+      growthData.push({
+        date: dateString,
+        count: cumulativeReferrals,
+      });
+    }
+
+    return growthData;
   }
 
   async addKol(addKolDto: AddKolDto) {
