@@ -64,7 +64,13 @@ export class TransactionsService {
     }
 
     if (type) {
-      queryBuilder.andWhere('log.method = :type', { type });
+      // Support comma-separated types for grouped filtering (e.g., upgrade group)
+      const types = type.split(',').map(t => t.trim());
+      if (types.length === 1) {
+        queryBuilder.andWhere('log.method = :type', { type: types[0] });
+      } else {
+        queryBuilder.andWhere('log.method IN (:...types)', { types });
+      }
     }
 
     if (startDate) {

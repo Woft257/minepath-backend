@@ -20,7 +20,7 @@ export class FindTransactionsDto {
   @IsString()
   search?: string;
 
-  @ApiProperty({ required: false, description: 'Filter by transaction type' })
+  @ApiProperty({ required: false, description: 'Filter by transaction type (single or comma-separated)' })
   @IsOptional()
   @IsString()
   type?: string;
